@@ -10,8 +10,8 @@ def birch_murnaghan(V, V0, K0, K0_prime):
     """
     Birch-Murnaghan 3rd order equation of state.
     """
-    K0=160
-    #K0_prime=5
+    #K0 = ###
+    #K0_prime = ###
     return (3/2) * K0 * ((V0/V)**(7/3) - (V0/V)**(5/3)) * (1 + 3/4 * (K0_prime - 4) * ((V0/V)**(2/3) - 1))
 
 
@@ -73,7 +73,7 @@ def main():
             continue
 
         # Initial guesses for V0, K0, K0_prime
-        initial_guess =  [V[0], 160, 5]
+        initial_guess =  [V[0], 1, 1]
 
 
         # Fit the Birch-Murnaghan equation to the data
