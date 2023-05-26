@@ -21,4 +21,4 @@ To run the code, follow these steps:
 1. Place the eos_addition.py file in the same directory as your .xlsx data file.
 2. Open your terminal.
 3. Navigate to the folder containing the files.
-4. Execute the following command: **'python eos.py DESIRED_TITLE_OF_PLOT SAVEFIG_NAME.png DATA.xlsx -pressures PRESSURE_COLUMN1 PRESSURE_COLUMN2 -volumes VOLUME_COLUMN1 VOLUME_COLUMN2'**
+4. Execute the following command: **'python eos.py DESIRED_TITLE_OF_PLOT SAVEFIG_NAME.png DATA.xlsx --pressures PRESSURE_COLUMN1 PRESSURE_COLUMN2 --volumes VOLUME_COLUMN1 VOLUME_COLUMN2'**
