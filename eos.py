@@ -10,6 +10,8 @@ def birch_murnaghan(V, V0, K0, K0_prime):
     """
     Birch-Murnaghan 3rd order equation of state.
     """
+    K0=160
+    #K0_prime=5
     return (3/2) * K0 * ((V0/V)**(7/3) - (V0/V)**(5/3)) * (1 + 3/4 * (K0_prime - 4) * ((V0/V)**(2/3) - 1))
 
 
@@ -36,53 +38,76 @@ def read_data(filename, columns):
 
 def main():
     # Define command line arguments
-    parser = argparse.ArgumentParser(description="Calculate the Birch-Murnaghan and Vinet EOS from .xlsx data.")
-    parser.add_argument('filename', type=str, help='Path to the .xlsx file')
-    parser.add_argument('pressure_column', type=str, help='Name of the pressure column')
-    parser.add_argument('volume_column', type=str, help='Name of the volume column')
+    parser = argparse.ArgumentParser(description="Calculate the Birch-Murnaghan and Vinet EOS from multiple .xlsx data.")
+    parser.add_argument('figure_title', type=str, help='Title of the figure')
     parser.add_argument('output_file', type=str, help='Name of the output figure file')
+    parser.add_argument('filename', type=str, help='Path to the .xlsx file')
+    parser.add_argument('--pressures', nargs='+', help='Names of the pressure columns')
+    parser.add_argument('--volumes', nargs='+', help='Names of the volume columns')
+    parser.add_argument('--colors', nargs='+', default=['mediumblue', 'red', 'green', 'purple'], help='Plot colors for each dataset')
     args = parser.parse_args()
 
-    data = read_data(args.filename, [args.pressure_column, args.volume_column])
-
-    # Ensure required columns exist in the dataframe
-    if not {args.pressure_column, args.volume_column}.issubset(data.columns):
-        print(f"Error: not all columns {args.pressure_column}, {args.volume_column} exist in the data.")
+    # Ensure that the number of pressure and volume columns are equal
+    if len(args.pressures) != len(args.volumes):
+        print(f"Error: Number of pressure columns and volume columns must be equal.")
         exit()
 
-    # Convert data to numpy arrays for optimization
-    V = np.array(data[args.volume_column])
-    P = np.array(data[args.pressure_column])
+    # Read the data from the file
+    data = read_data(args.filename, args.pressures + args.volumes)
+    data = data.interpolate()
 
-    # Initial guesses for V0, K0, K0_prime
-    initial_guess = [V[0], 1, 1]
+    # Process each pressure-volume pair
+    for i in range(len(args.pressures)):
+        # Ensure required columns exist in the dataframe
+        if not {args.pressures[i], args.volumes[i]}.issubset(data.columns):
+            print(f"Error: not all columns {args.pressures[i]}, {args.volumes[i]} exist in the data.")
+            exit()
 
-    # Fit the Birch-Murnaghan equation to the data
-    try:
-        popt_bm, pcov_bm = curve_fit(birch_murnaghan, V, P, p0=initial_guess)
-        print(f"Birch-Murnaghan optimized parameters: V0={popt_bm[0]}, K0={popt_bm[1]}, K0_prime={popt_bm[2]}")
-    except Exception as e:
-        print(f"Error in Birch-Murnaghan curve fitting: {e}")
-        exit()
+        P = np.array(data[args.pressures[i]])
+        V = np.array(data[args.volumes[i]])
 
-    # Fit the Vinet equation to the data
-    try:
-        popt_vinet, pcov_vinet = curve_fit(vinet, V, P, p0=initial_guess)
-        print(f"Vinet optimized parameters: V0={popt_vinet[0]}, K0={popt_vinet[1]}, K0_prime={popt_vinet[2]}")
-    except Exception as e:
-        print(f"Error in Vinet curve fitting: {e}")
-        exit()
+        # Skip the data if there are missing values
+        if np.isnan(P).any() or np.isnan(V).any():
+            print(
+                f"Warning: missing values in data for pressure column {args.pressures[i]} and volume column {args.volumes[i]}. Skipping this data.")
+            continue
 
-    # Plotting the data and fitted curves
-    plt.plot(birch_murnaghan(V, *popt_bm), V,  ':', color='gray',label='Birch-Murnaghan Fit:\nV0=%5.3f\nK0=%5.3f\nK0_prime=%5.3f' % tuple(popt_bm))
-    #plt.plot(vinet(V, *popt_vinet), V,  ':', color='red',label='Vinet Fit: V0=%5.3f, K0=%5.3f, K0_prime=%5.3f' % tuple(popt_vinet))
-    plt.plot(P, V, 'o', ms=5 ,color='mediumblue',markeredgecolor='black', label='Data')
-    plt.ylabel('Volume')
-    plt.xlabel('Pressure')
-    plt.title('EOS: MgSiO3 Bridgmanite')
-    plt.legend(loc='upper right')
-    plt.savefig(args.output_file)
-    plt.show()
+        # Initial guesses for V0, K0, K0_prime
+        initial_guess =  [V[0], 160, 5]
+
+
+        # Fit the Birch-Murnaghan equation to the data
+        try:
+            popt_bm, pcov_bm = curve_fit(birch_murnaghan, V, P, p0=initial_guess, maxfev = 5000)
+            print(
+                f"Birch-Murnaghan optimized parameters for pressure column {args.pressures[i]} and volume column {args.volumes[i]}: V0={popt_bm[0]}, K0={popt_bm[1]}, K0_prime={popt_bm[2]}")
+        except Exception as e:
+            print(
+                f"Error in Birch-Murnaghan curve fitting for pressure column {args.pressures[i]} and volume column {args.volumes[i]}: {e}")
+            exit()
+
+        # Fit the Vinet equation to the data
+        try:
+            popt_vinet, pcov_vinet = curve_fit(vinet, V, P, p0=initial_guess)
+            print(
+                f"Vinet optimized parameters for pressure column {args.pressures[i]} and volume column {args.volumes[i]}: V0={popt_vinet[0]}, K0={popt_vinet[1]}, K0_prime={popt_vinet[2]}")
+        except Exception as e:
+            print(
+                f"Error in Vinet curve fitting for pressure column {args.pressures[i]} and volume column {args.volumes[i]}: {e}")
+            exit()
+
+        plt.plot(birch_murnaghan(V, *popt_bm), V, ':', color=args.colors[i % len(args.colors)],
+                 label=f'Birch-Murnaghan Fit:\nV0=%5.3f\nK0=%5.3f\nK0_prime=%5.3f' % tuple(popt_bm))
+        #plt.plot(vinet(V, *popt_vinet), V, ':', color='blue',
+         #        label=f'Vinet Fit:\nV0=%5.3f\nK0=%5.3f\nK0_prime=%5.3f' % tuple(popt_vinet))
+        plt.plot(P, V, 'o', ms=5, color=args.colors[i % len(args.colors)], markeredgecolor='black', label=f'{args.volumes[i]}')
+
+        plt.ylabel('Volume')
+        plt.xlabel('Pressure')
+        plt.title(args.figure_title)
+        plt.legend(bbox_to_anchor=(1., 1), loc='upper left')
+        plt.tight_layout()
+        plt.savefig(args.output_file, dpi=800)
 
 if __name__ == "__main__":
     main()
