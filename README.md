@@ -3,6 +3,14 @@
 There are 2 Python **.py** files to choose from, both serving the same purpose. The key differences between them are outlined below. In both source codes, you can modify the initial guesses for 
 *K0* and *K0'* within the **MAIN** function. Additionally, you have the option to fix *K0* and *K0'* in the **BM** and **Vinet** functions, which can be useful when dealing with low-quality data.
 
+## requirements
+
+* pandas
+* numpy 
+* matplotlib.pyplot
+* argparse
+* scipy.optimize
+
 ## eos.py
 This version is simpler and more straightforward. It reads a .xlsx file, specifically one pressure column and one volume column. The resulting plot is saved.
 
